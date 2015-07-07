@@ -58,7 +58,7 @@ public class EntityHolder {
     @SuppressWarnings("unchecked")
     public <T> Entity<T> getEntity(Class<T> classOfT) {
         Entity<?> re = map.get(classOfT);
-        if (null == re) {
+        if (null == re || !re.isComplete()) {
             synchronized (map) {
                 re = map.get(classOfT);
                 if (null == re) {
@@ -74,11 +74,8 @@ public class EntityHolder {
      * 重新载入
      */
     public <T> Entity<T> reloadEntity(Dao dao, Class<T> classOfT) {
-
         final Entity<T> re = maker.make(classOfT);
-        synchronized (map) {
-            map.put(classOfT, re);
-        }
+        map.put(classOfT, re);
         support.expert.createEntity(dao, re);
         // 最后在数据库中验证一下实体各个字段
         support.run(new ConnCallback() {
@@ -183,4 +180,7 @@ public class EntityHolder {
         return getEntity(first.getClass());
     }
 
+    public boolean hasType(Class<?> typeName) {
+    	return map.containsKey(typeName);
+    }
 }

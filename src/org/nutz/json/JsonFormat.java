@@ -1,5 +1,6 @@
 package org.nutz.json;
 
+import java.text.SimpleDateFormat;
 import java.util.regex.Pattern;
 
 import org.nutz.castor.Castors;
@@ -41,6 +42,13 @@ public class JsonFormat {
         return new JsonFormat(false).setQuoteName(false).setIgnoreNull(true);
     }
 
+    /**
+     * 不换行,不忽略空值
+     */
+    public static JsonFormat tidy() {
+        return new JsonFormat(true).setIgnoreNull(false);
+    }
+
     public JsonFormat() {
         this(true);
     }
@@ -75,6 +83,7 @@ public class JsonFormat {
     /**
      * 用到的类型转换器
      */
+    @JsonField(ignore=true)
     private Castors castors;
     /**
      * 分隔符
@@ -84,6 +93,12 @@ public class JsonFormat {
      * 是否自动将值应用Unicode编码
      */
     private boolean autoUnicode;
+    /**
+     * unicode编码用大写还是小写
+     */
+    private boolean unicodeLower;
+
+    private SimpleDateFormat dateFormat;
 
     public boolean ignore(String name) {
         if (null != actived)
@@ -92,10 +107,10 @@ public class JsonFormat {
             return locked.matcher(name).find();
         return false;
     }
-    
-//===================================================================
-//getter setter
-    
+
+    // ===================================================================
+    // getter setter
+
     public boolean isCompact() {
         return compact;
     }
@@ -187,5 +202,29 @@ public class JsonFormat {
     public boolean isAutoUnicode() {
         return autoUnicode;
     }
-    
+
+    public boolean isUnicodeLower() {
+        return unicodeLower;
+    }
+
+    public void setUnicodeLower(boolean unicodeLower) {
+        this.unicodeLower = unicodeLower;
+    }
+
+    public JsonFormat setDateFormat(String df) {
+        if (df == null) {
+            this.dateFormat = null;
+        } else {
+            this.dateFormat = new SimpleDateFormat(df);
+        }
+        return this;
+    }
+
+    public void setDateFormat(SimpleDateFormat df) {
+        this.dateFormat = df;
+    }
+
+    public SimpleDateFormat getDateFormat() {
+        return dateFormat == null ? null : (SimpleDateFormat) dateFormat.clone();
+    }
 }

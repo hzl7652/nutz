@@ -90,7 +90,7 @@ public abstract class Times {
 
     private static Pattern _P_TIME = Pattern.compile("^((\\d{2,4})([/\\\\-])(\\d{1,2})([/\\\\-])(\\d{1,2}))?"
                                                      + "(([ T])?"
-                                                     + "(\\d{1,2})(:)(\\d{1,2})(:)(\\d{1,2})"
+                                                     + "(\\d{1,2})(:)(\\d{1,2})((:)(\\d{1,2}))?"
                                                      + "(([.])"
                                                      + "(\\d{1,}))?)?"
                                                      + "(([+-])(\\d{1,2})(:\\d{1,2})?)?"
@@ -144,9 +144,9 @@ public abstract class Times {
 
             int HH = _int(m, 9, 0);
             int mm = _int(m, 11, 0);
-            int ss = _int(m, 13, 0);
+            int ss = _int(m, 14, 0);
 
-            int ms = _int(m, 16, 0);
+            int ms = _int(m, 17, 0);
 
             /*
              * zozoh: 先干掉，还是用 SimpleDateFormat 吧，"1980-05-01 15:17:23" 之前的日子
@@ -174,8 +174,8 @@ public abstract class Times {
                                        ms);
             SimpleDateFormat df = (SimpleDateFormat) DF_DATE_TIME_MS4.clone();
             // 那么用字符串中带有的时区信息 ...
-            if (null == tz && !Strings.isBlank(m.group(17))) {
-                tz = TimeZone.getTimeZone(String.format("GMT%s%s:00", m.group(18), m.group(19)));
+            if (null == tz && !Strings.isBlank(m.group(18))) {
+                tz = TimeZone.getTimeZone(String.format("GMT%s%s:00", m.group(19), m.group(20)));
             }
             // 指定时区 ...
             if (null != tz)
@@ -545,18 +545,17 @@ public abstract class Times {
         Date[] re = new Date[2];
 
         // 计算开始
-        c.setTimeInMillis(c.getTimeInMillis() + MS_WEEK * from);
-        c.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+        c.add(Calendar.DAY_OF_YEAR, 7 * from);
+        c.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
         c.set(Calendar.HOUR_OF_DAY, 0);
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
         re[0] = c.getTime();
 
         // 计算结束
-        c.setTimeInMillis(c.getTimeInMillis() + MS_WEEK * (len + 1) - 1000);
-        c.set(Calendar.HOUR_OF_DAY, 23);
-        c.set(Calendar.MINUTE, 59);
-        c.set(Calendar.SECOND, 59);
+        c.add(Calendar.DAY_OF_YEAR, 7 * (len + 1));
+        c.add(Calendar.MILLISECOND, -1);
         re[1] = c.getTime();
 
         // 返回
@@ -721,13 +720,10 @@ public abstract class Times {
     private static final DateFormat DF_DATE_TIME = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final DateFormat DF_DATE = new SimpleDateFormat("yyyy-MM-dd");
 
-    private static final long MS_DAY = 3600L * 24 * 1000;
-    private static final long MS_WEEK = MS_DAY * 7;
-
-    public static final int T_1S = 1000;
-    public static final int T_1M = 60 * 1000;
-    public static final int T_1H = 60 * 60 * 1000;
-    public static final int T_1D = 24 * 60 * 60 * 1000;
+    public static final long T_1S = 1000;
+    public static final long T_1M = 60 * 1000;
+    public static final long T_1H = 60 * 60 * 1000;
+    public static final long T_1D = 24 * 60 * 60 * 1000;
 
     /**
      * 方便的把时间换算成毫秒数
@@ -779,39 +775,59 @@ public abstract class Times {
     /**
      * 一段时间长度的毫秒数转换为一个时间长度的字符串
      * 
-     * 1000 -> 1s
+     * 1000 -> 1S
      * 
-     * 120000 - 2m
+     * 120000 - 2M
      * 
      * @param mi
      *            毫秒数
-     * @return 可以正常识别的文字
+     * @return 可读的文字
      */
     public static String fromMillis(long mi) {
-        return _fromMillis(mi, TIME_S_EN, TIME_M_EN, TIME_H_EN, TIME_D_EN);
+        return _fromMillis(mi, true);
     }
 
+    /**
+     * fromMillis的中文版本
+     * 
+     * 1000 -> 1秒
+     * 
+     * 120000 - 2分
+     * 
+     * @param mi
+     *            毫秒数
+     * @return 可读的文字
+     */
     public static String fromMillisCN(long mi) {
-        return _fromMillis(mi, TIME_S_CN, TIME_M_CN, TIME_H_CN, TIME_D_CN);
+        return _fromMillis(mi, false);
     }
 
-    public static String _fromMillis(long mi, String S, String M, String H, String D) {
-        if (mi < T_1S) {
-            return "1s";
+    private static String _fromMillis(long mi, boolean useEnglish) {
+        if (mi <= T_1S) {
+            return "1" + (useEnglish ? TIME_S_EN : TIME_S_CN);
         }
-        if (mi < T_1M) {
-            return (int) mi / T_1S + S;
+        if (mi < T_1M && mi > T_1S) {
+            return (int) (mi / T_1S) + (useEnglish ? TIME_S_EN : TIME_S_CN);
         }
         if (mi >= T_1M && mi < T_1H) {
-            int m = (int) mi / T_1M;
-            return m + M + fromMillis(mi - m * T_1M);
+            int m = (int) (mi / T_1M);
+            return m
+                   + (useEnglish ? TIME_M_EN : TIME_M_CN)
+                   + _fromMillis(mi - m * T_1M, useEnglish);
         }
         if (mi >= T_1H && mi < T_1D) {
-            int h = (int) mi / T_1H;
-            return h + H + fromMillis(mi - h * T_1H);
+            int h = (int) (mi / T_1H);
+            return h
+                   + (useEnglish ? TIME_H_EN : TIME_H_CN)
+                   + _fromMillis(mi - h * T_1H, useEnglish);
         }
-        // if (mi > T_1D)
-        int d = (int) mi / T_1D;
-        return d + D + fromMillis(mi - d * T_1D);
+        if (mi >= T_1D) {
+            int d = (int) (mi / T_1D);
+            return d
+                   + (useEnglish ? TIME_D_EN : TIME_D_CN)
+                   + _fromMillis(mi - d * T_1D, useEnglish);
+        }
+        // WTF ?
+        throw Lang.impossible();
     }
 }

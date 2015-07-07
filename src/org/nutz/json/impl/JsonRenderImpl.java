@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -72,7 +75,17 @@ public class JsonRenderImpl implements JsonRender {
                 string2Json(((Enum) obj).name());
             }
             // 数字，布尔等
-            else if (mr.isNumber() || mr.isBoolean()) {
+            else if (mr.isNumber()) {
+                String tmp = obj.toString();
+                if (tmp.equals("NaN")) {
+                    // TODO 怎样才能应用上JsonFormat中是否忽略控制呢?
+                    // 因为此时已经写入了key:
+                    writer.write("null");
+                }
+                else
+                    writer.write(tmp);
+            }
+            else if (mr.isBoolean()) {
                 writer.append(obj.toString());
             }
             // 字符串
@@ -81,7 +94,16 @@ public class JsonRenderImpl implements JsonRender {
             }
             // 日期时间
             else if (mr.isDateTimeLike()) {
-                string2Json(format.getCastors().castToString(obj));
+                boolean flag = true;
+                if (obj instanceof Date) {
+                    DateFormat df = format.getDateFormat();
+                    if (df != null) {
+                        string2Json(df.format((Date)obj));
+                        flag = false;
+                    }
+                }
+                if (flag)
+                    string2Json(format.getCastors().castToString(obj));
             }
             // 其他
             else {
@@ -264,8 +286,10 @@ public class JsonRenderImpl implements JsonRender {
                         }
                         // 其他统统变字符串
                         else {
-                            value = value.toString();
+                            value = value2string(jef, value);
                         }
+                    } else if (jef.hasDateFormat() && null != value && value instanceof Date) {
+                        value = jef.getDateFormat().format((Date)value);
                     }
 
                     // 加入输出列表 ...
@@ -328,9 +352,14 @@ public class JsonRenderImpl implements JsonRender {
                     writer.append("\\\\");
                     break;
                 default:
-                    if (c >= 256 && format.isAutoUnicode())
-                        writer.append("\\u").append(Strings.fillHex(c, 4)
-                                                           .toUpperCase());
+                    if (c >= 256 && format.isAutoUnicode()) {
+                        writer.append("\\u");
+                        String u = Strings.fillHex(c, 4);
+                        if (format.isUnicodeLower())
+                        	writer.write(u.toLowerCase());
+                        else
+                        	writer.write(u.toUpperCase());
+                    }
                     else
                         writer.append(c);
                 }
@@ -367,4 +396,16 @@ public class JsonRenderImpl implements JsonRender {
         writer.append(']');
     }
 
+    protected String value2string(JsonEntityField jef, Object value) {
+        if (value instanceof Date) {
+            SimpleDateFormat df = jef.getDateFormat();
+            if (df == null) {
+                df = format.getDateFormat();
+            }
+            if (df != null) {
+                return df.format((Date)value);
+            }
+        }
+        return value.toString();
+    }
 }

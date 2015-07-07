@@ -16,11 +16,12 @@ import java.util.Map;
 
 /**
  * 将整个 HTTP 请求作为名值对来处理
- *
+ * 
  * @author zozoh(zozohtnt@gmail.com)
  * @author juqkai(juqkai@gmail.com)
  */
 public class PairAdaptor extends AbstractAdaptor {
+
     private static final Log log = Logs.get();
 
     protected ParamInjector evalInjectorBy(Type type, Param param) {
@@ -29,9 +30,7 @@ public class PairAdaptor extends AbstractAdaptor {
         Class<?> clazz = Lang.getTypeClass(type);
         if (clazz == null) {
             if (log.isWarnEnabled())
-                log.warnf("!!Fail to get Type Class : type=%s , param=%s",
-                        type,
-                        param);
+                log.warnf("!!Fail to get Type Class : type=%s , param=%s", type, param);
             return null;
         }
 
@@ -41,6 +40,10 @@ public class PairAdaptor extends AbstractAdaptor {
 
         if (null == param)
             return null;// 让超类来处理吧,我不管了!!
+
+        String defaultValue = null;
+        if (param.df() != null && !ParamDefailtTag.equals(param.df()))
+            defaultValue = param.df();
         String pm = param.value();
         String datefmt = param.dfmt();
         // POJO
@@ -55,11 +58,25 @@ public class PairAdaptor extends AbstractAdaptor {
             return new ObjectNavlPairInjector(pm.substring(2), type);
         }
         // POJO[]
-        else if (clazz.isArray())
-            return new ArrayInjector(pm, clazz, paramTypes);
+        else if (clazz.isArray()) {
+            return new ArrayInjector(pm,
+                                     null,
+                                     type,
+                                     paramTypes,
+                                     defaultValue,
+                                     param.array_auto_split());
+        }
 
         // Name-value
-        return new NameInjector(pm, datefmt, clazz, paramTypes);
+        return getNameInjector(pm, datefmt, type, paramTypes, defaultValue);
+    }
+
+    protected ParamInjector getNameInjector(String pm,
+                                            String datefmt,
+                                            Type type,
+                                            Type[] paramTypes,
+                                            String defaultValue) {
+        return new NameInjector(pm, datefmt, type, paramTypes, defaultValue);
     }
 
 }

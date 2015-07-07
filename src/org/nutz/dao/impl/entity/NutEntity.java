@@ -21,6 +21,7 @@ import org.nutz.lang.Mirror;
 import org.nutz.lang.born.BornContext;
 import org.nutz.lang.born.Borning;
 import org.nutz.lang.born.Borns;
+import org.nutz.lang.reflect.FastClassFactory;
 import org.nutz.lang.util.Context;
 
 /**
@@ -156,8 +157,10 @@ public class NutEntity<T> implements Entity<T> {
      * 实体的主键类型
      */
     private PkType pkType;
+    
+    private boolean complete;
 
-    public NutEntity(Class<T> type) {
+    public NutEntity(final Class<T> type) {
         this.type = type;
         this.mirror = Mirror.me(type);
         this.byJava = new HashMap<String, MappingField>();
@@ -177,7 +180,13 @@ public class NutEntity<T> implements Entity<T> {
 
         // 获得默认的构造方法
         try {
-            bornByDefault = mirror.getBorningByArgTypes();
+            //bornByDefault = mirror.getBorningByArgTypes();
+            bornByDefault = new Borning<T>() {
+                @SuppressWarnings("unchecked")
+                public T born(Object... args) {
+                    return (T)FastClassFactory.get(type).born();
+                }
+            };
         }
         catch (Exception e) {}
 
@@ -193,8 +202,12 @@ public class NutEntity<T> implements Entity<T> {
         this.manys = new LinkFieldSet();
         this.manymanys = new LinkFieldSet();
     }
-
+    
     public T getObject(ResultSet rs, FieldMatcher matcher) {
+        return getObject(rs, matcher, null);
+    }
+
+    public T getObject(ResultSet rs, FieldMatcher matcher, String prefix) {
         // 构造时创建对象
         if (null != bornByRS)
             return bornByRS.born(rs);
@@ -203,20 +216,24 @@ public class NutEntity<T> implements Entity<T> {
         T re = bornByDefault.born(EMTRY_ARG);
         if (null == matcher)
             for (MappingField fld : fields)
-                fld.injectValue(re, rs);
+                fld.injectValue(re, rs, prefix);
         else
             for (MappingField fld : fields)
                 if (matcher.match(fld.getName()))
-                    fld.injectValue(re, rs);
+                    fld.injectValue(re, rs, prefix);
 
         // 返回构造的对象
         return re;
     }
-
+    
     public T getObject(Record rec) {
+        return getObject(rec, null);
+    }
+
+    public T getObject(Record rec, String prefix) {
         T obj = bornByDefault.born(EMTRY_ARG);
         for (MappingField fld : fields)
-            fld.injectValue(obj, rec);
+            fld.injectValue(obj, rec, prefix);
         return obj;
 
     }
@@ -472,5 +489,13 @@ public class NutEntity<T> implements Entity<T> {
 
     public String getColumnComent(String columnName) {
         return columnComments.get(columnName);
+    }
+
+    public boolean isComplete() {
+        return complete;
+    }
+
+    public void setComplete(boolean complete) {
+        this.complete = complete;
     }
 }

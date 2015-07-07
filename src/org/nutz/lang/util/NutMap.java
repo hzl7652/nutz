@@ -21,7 +21,7 @@ import org.nutz.lang.Strings;
  * @author zozoh(zozohtnt@gmail.com)
  */
 @SuppressWarnings("serial")
-public class NutMap extends LinkedHashMap<String, Object> {
+public class NutMap extends LinkedHashMap<String, Object> implements NutBean {
 
     public static NutMap WRAP(Map<String, Object> map) {
         if (null == map)
@@ -67,6 +67,15 @@ public class NutMap extends LinkedHashMap<String, Object> {
 
     public static NutMap WRAP(String json) {
         return new NutMap(json);
+    }
+
+    public boolean has(String key) {
+        return null != get(key);
+    }
+
+    public Object get(String key, Object dft) {
+        Object v = get(key);
+        return null == v ? dft : v;
     }
 
     public int getInt(String key) {
@@ -139,13 +148,14 @@ public class NutMap extends LinkedHashMap<String, Object> {
         return null == v ? dft : Castors.me().castTo(v, Date.class);
     }
 
-    public <T extends Enum<?>> T getEnum(String key, Class<T> classOfEnum) {
+    public <T extends Enum<T>> T getEnum(String key, Class<T> classOfEnum) {
         String s = getString(key);
         if (Strings.isBlank(s))
             return null;
-        return Castors.me().castTo(s, classOfEnum);
+        return Enum.valueOf(classOfEnum, s);
     }
 
+    @SuppressWarnings("unchecked")
     public boolean isEnum(String key, Enum<?>... eus) {
         if (null == eus || eus.length == 0)
             return false;
@@ -265,4 +275,14 @@ public class NutMap extends LinkedHashMap<String, Object> {
         this.put(key, value);
         return this;
     }
+
+    public void unset(String key) {
+        this.remove(key);
+    }
+
+    public NutBean setAll(Map<String, Object> map) {
+        this.putAll(map);
+        return this;
+    }
+
 }

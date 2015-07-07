@@ -194,24 +194,60 @@ public class Mirror<T> {
      *             没有找到 Getter
      */
     public Method getGetter(String fieldName) throws NoSuchMethodException {
+        return getGetter(fieldName, null);
+    }
+
+    /**
+     * 根据名称和返回值获取一个 Getter。
+     * <p>
+     * 比如，你想获取 abc 的 getter ，那么优先查找 getAbc()，如果没有则查找isAbc()，最后才是查找 abc()。
+     * 
+     * @param fieldName
+     *            字段名
+     * @param returnType
+     *            返回值
+     * @return 方法
+     * @throws NoSuchMethodException
+     *             没有找到 Getter
+     */
+    public Method getGetter(String fieldName, Class<?> returnType) throws NoSuchMethodException {
         String fn = Strings.upperFirst(fieldName);
         String _get = "get" + fn;
         String _is = "is" + fn;
+        Method _m = null;
         for (Method method : klass.getMethods()) {
             if (method.getParameterTypes().length != 0)
                 continue;
+
+            Class<?> mrt = method.getReturnType();
+
+            // 必须有返回类型
+            if (null == mrt)
+                continue;
+
+            // 如果给了返回类型，用它判断一下
+            if (null != returnType && !returnType.equals(mrt))
+                continue;
+
             if (!method.isAccessible()) // 有些时候,即使是public的方法,也不一定能访问
                 method.setAccessible(true);
+
             if (_get.equals(method.getName()))
                 return method;
+
             if (_is.equals(method.getName())) {
-                if (!Mirror.me(method.getReturnType()).isBoolean())
+                if (!Mirror.me(mrt).isBoolean())
                     throw new NoSuchMethodException();
                 return method;
             }
-            if (fieldName.equals(method.getName()))
-                return method;
+
+            if (fieldName.equals(method.getName())) {
+                _m = method;
+                continue;
+            }
         }
+        if (_m != null)
+            return _m;
         throw Lang.makeThrow(NoSuchMethodException.class,
                              "Fail to find getter for [%s]->[%s]",
                              klass.getName(),
@@ -229,7 +265,7 @@ public class Mirror<T> {
      *             没有找到 Getter
      */
     public Method getGetter(Field field) throws NoSuchMethodException {
-        return getGetter(field.getName());
+        return getGetter(field.getName(), field.getType());
     }
 
     /**
@@ -766,7 +802,7 @@ public class Mirror<T> {
                 if (obj != null && obj.getClass().isArray() && "length".equals(name)) {
                     return Lang.length(obj);
                 }
-                throw makeGetValueException(obj.getClass(), name, e);
+                throw makeGetValueException(obj == null ? getType() : obj.getClass(), name, e);
             }
         }
     }
@@ -997,18 +1033,26 @@ public class Mirror<T> {
      * @return 输出方式
      */
     public Ejecting getEjecting(String fieldName) {
+        return getEjecting(fieldName, null);
+    }
+
+    public Ejecting getEjecting(Field field) {
         try {
-            return new EjectByGetter(getGetter(fieldName));
+            return new EjectByGetter(getGetter(field));
+        }
+        catch (NoSuchMethodException e1) {
+            return new EjectByField(field);
+        }
+    }
+
+    public Ejecting getEjecting(String fieldName, Class<?> returnType) {
+        try {
+            return new EjectByGetter(getGetter(fieldName, returnType));
         }
         catch (NoSuchMethodException e) {
             try {
                 Field field = this.getField(fieldName);
-                try {
-                    return new EjectByGetter(getGetter(field));
-                }
-                catch (NoSuchMethodException e1) {
-                    return new EjectByField(field);
-                }
+                return getEjecting(field);
             }
             catch (NoSuchFieldException e1) {
                 throw Lang.wrapThrow(e1);

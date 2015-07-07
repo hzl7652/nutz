@@ -147,7 +147,7 @@ public class Scans {
             if (log.isInfoEnabled())
                 log.info("Fail to registerLocation --> " + url, e);
         }
-        return new ErrorResourceLocation(url);
+        return ErrorResourceLocation.make(url);
     }
 
     public List<NutResource> scan(String src) {
@@ -219,7 +219,13 @@ public class Scans {
         for (NutResource r : list) {
         	int index = tmp.indexOf(r);
         	if (index > -1) {
-        		log.infof("same resource [%s] will be override", r.getName());
+        	    NutResource old = tmp.get(index);
+        	    if (old.getSource() != null && r.getSource() != null && old.getSource().equals(r.getSource())) {
+        	        continue;
+        	    }
+        		log.infof("same resource path [%s](%s) will be override by [%s](%s)", 
+        		          tmp.get(index).getName(), tmp.get(index).getSource(),
+        		          r.getName(), r.getSource());
         		tmp.set(index, r);
         	} else
         		tmp.add(r);
@@ -314,6 +320,7 @@ public class Scans {
             nutResource.setName(entryName);
         else
             nutResource.setName(entryName.substring(base.length()));
+        nutResource.setSource(jarPath + ":" + entryName);
         return nutResource;
     }
 
@@ -370,13 +377,9 @@ public class Scans {
                     Class<?> klass = Lang.loadClass(className);
                     re.add(klass);
                 }
-                catch (ClassNotFoundException e) {
+                catch (Throwable e) {
                     if (log.isInfoEnabled())
-                        log.infof("Resource can't map to Class, Resource %s", nr, e);
-                }
-                catch (IOException e) {
-                    if (log.isInfoEnabled())
-                        log.infof("Resource can't map to Class, Resource %s", nr, e);
+                        log.info("Resource can't map to Class, Resource " + nr.getName(), e);
                 }
                 finally {
                     Streams.safeClose(in);

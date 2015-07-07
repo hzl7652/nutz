@@ -20,6 +20,8 @@ public class RawView2 extends RawView {
 	protected DataInputStream in;
 	
 	protected int maxLen;
+	
+	protected RawView2(){}
 
 	public RawView2(String contentType, InputStream in, int maxLen) {
 		super(contentType);
@@ -63,6 +65,5 @@ public class RawView2 extends RawView {
 		OutputStream out = resp.getOutputStream();
 		writeDownloadRange(in, out, rangeRange);
 		out.close();
-		System.out.println("END");
 	}
 }

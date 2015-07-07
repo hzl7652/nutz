@@ -73,11 +73,11 @@
 		<doc path="session.man"></doc>
 	</doc>
 	<doc path="json" title="Json 手册">
-		<doc path="hello.man"/>
-		<doc path="formater.man"/>
-		<doc path="with_castors.man"/>
-		<doc path="customize.man"/>
-		<doc path="json_book.man"></doc>
+		<doc path="base.man"/>
+		<doc path="from.man"/>
+		<doc path="to.man"/>
+		<doc path="mvc.man"/>
+		<doc path="annotations.man"/>
 	</doc>
     	<doc path="el" title="表达式引擎">
 		<doc path="overview.man"></doc>
@@ -94,10 +94,29 @@
 		<doc path="plugin.man"/>
 		<doc path="log.man"/>
 	</doc>
+	<doc path="http" title="Http轻客户端">
+		<doc path="overview.man"></doc>
+	</doc>
+	<doc path="img" title="图像处理小军刀">
+		<doc path="overview.man"></doc>
+	</doc>
+	<doc path="integration" title="与第三方框架的集成">
+		<doc path="nutzmore.man"></doc>
+		<doc path="freemarker.man"></doc>
+		<doc path="velocity.man"></doc>
+		<doc path="beetl.man"></doc>
+		<doc path="smarty4j.man"></doc>
+		<doc path="httl.man"></doc>
+		<doc path="shiro.man"></doc>
+		<doc path="quartz.man"></doc>
+		<doc path="ehcache.man"></doc>
+		<doc path="daocache.man"></doc>
+	</doc>
 	<!--doc path="zmole" title="zMole">
 		<doc path="zmole_get_start.man"/>
 	</doc-->
 	<doc path="history" title="版本历史">
+		<doc path="1_b_52.man"/>
 		<doc path="1_b_51.man"/>
 		<doc path="1_b_50.man"/>
 		<doc path="1_b_49.man"/>

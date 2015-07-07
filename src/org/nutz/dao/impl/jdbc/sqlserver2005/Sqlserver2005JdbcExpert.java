@@ -27,7 +27,7 @@ public class Sqlserver2005JdbcExpert extends AbstractJdbcExpert {
     // private static String COMMENT_TABLE =
     // "EXECUTE sp_updateextendedproperty N'Description', '$tableComment', N'user', N'dbo', N'table', N'$table', NULL, NULL";
 
-    private static String COMMENT_COLUMN = "EXECUTE sp_addextendedproperty N'Description', '$columnComment', N'user', N'dbo', N'table', N'$table', N'column', N'$column'";
+    private static String COMMENT_COLUMN = "EXECUTE sp_addextendedproperty N'MS_Description', '$columnComment', N'user', N'dbo', N'table', N'$table', N'column', N'$column'";
 
     public Sqlserver2005JdbcExpert(JdbcExpertConfigFile conf) {
         super(conf);
@@ -107,8 +107,7 @@ public class Sqlserver2005JdbcExpert extends AbstractJdbcExpert {
         }
     }
 
-    @Override
-    protected String evalFieldType(MappingField mf) {
+    public String evalFieldType(MappingField mf) {
         if (mf.getCustomDbType() != null)
             return mf.getCustomDbType();
         switch (mf.getColumnType()) {
@@ -139,7 +138,9 @@ public class Sqlserver2005JdbcExpert extends AbstractJdbcExpert {
                 return "decimal(15,10)";
             return "float";
         case BINARY:
-            return "BINARY";
+            return "varbinary(max)";
+        //case TEXT :
+        //    return "nvarchar(max)";
         default :
             break;
         }

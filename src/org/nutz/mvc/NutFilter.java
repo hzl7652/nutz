@@ -69,7 +69,6 @@ public class NutFilter implements Filter {
     		return;
     	}
     	log.infof("NutFilter[%s] starting ...", conf.getFilterName());
-        Mvcs.setServletContext(conf.getServletContext());
         this.selfName = conf.getFilterName();
         Mvcs.set(selfName, null, null);
 
@@ -90,10 +89,10 @@ public class NutFilter implements Filter {
         		tmp = tmp.trim().intern();
         		if (tmp.length() > 1) {
         			if (tmp.startsWith("*")) {
-    					prefix.add(tmp.substring(1));
+        			    suffix.add(tmp.substring(1));
     					continue;
     				} else if (tmp.endsWith("*")) {
-    					suffix.add(tmp.substring(0, tmp.length() - 1));
+    					prefix.add(tmp.substring(0, tmp.length() - 1));
     					continue;
     				}
         		}
@@ -104,7 +103,7 @@ public class NutFilter implements Filter {
         		log.info("exclusionsPrefix  = " + exclusionsPrefix);
         	}
         	if (suffix.size() > 0) {
-        		exclusionsSuffix = Pattern.compile("^("+Lang.concat("|", suffix)+")", Pattern.CASE_INSENSITIVE);
+        		exclusionsSuffix = Pattern.compile("("+Lang.concat("|", suffix)+")$", Pattern.CASE_INSENSITIVE);
         		log.info("exclusionsSuffix = " + exclusionsSuffix);
         	}
         	if (paths.size() > 0) {
@@ -113,6 +112,7 @@ public class NutFilter implements Filter {
         	}
         }
         sp = config.getSessionProvider();
+        Mvcs.ctx().reqThreadLocal.set(null);
     }
 
     public void destroy() {
@@ -124,6 +124,7 @@ public class NutFilter implements Filter {
             handler.depose();
         Mvcs.close();
         Mvcs.setServletContext(null);
+        Mvcs.ctx().reqThreadLocal.set(null);
     }
     
     /**
@@ -194,6 +195,8 @@ public class NutFilter implements Filter {
                     Mvcs.set(preName, request, response);
                 if (preContext != null)
                     Mvcs.ctx().reqThreadLocal.set(preContext);
+            } else {
+                Mvcs.ctx().reqThreadLocal.set(null);
             }
         }
     }

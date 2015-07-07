@@ -6,6 +6,7 @@ import java.io.Reader;
 import java.lang.reflect.Array;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.nutz.castor.Castors;
@@ -14,6 +15,8 @@ import org.nutz.dao.entity.Entity;
 import org.nutz.dao.sql.DaoStatement;
 import org.nutz.dao.sql.SqlContext;
 import org.nutz.dao.sql.SqlType;
+import org.nutz.dao.util.blob.SimpleBlob;
+import org.nutz.dao.util.blob.SimpleClob;
 import org.nutz.lang.Strings;
 
 public abstract class NutStatement implements DaoStatement {
@@ -23,6 +26,8 @@ public abstract class NutStatement implements DaoStatement {
     private SqlContext context;
 
     private SqlType sqlType;
+    
+    private boolean forceExecQuery;
 
     public NutStatement() {
         this.context = new SqlContext();
@@ -246,9 +251,21 @@ public abstract class NutStatement implements DaoStatement {
         else {
             if (obj instanceof Blob) {
                 Blob blob = (Blob) obj;
-                return "Blob(" + blob.hashCode() + ")";
+                if (blob instanceof SimpleBlob) {
+                    try {
+                        return "Blob(len=" + blob.length() + ")";
+                    }
+                    catch (SQLException e) {}// 不可能
+                }
+                return "Blob(hascode=" + blob.hashCode() + ")";
             } else if (obj instanceof Clob) {
                 Clob clob = (Clob) obj;
+                if (clob instanceof SimpleClob) {
+                    try {
+                        return "Clob(len=" + clob.length() + ")";
+                    }
+                    catch (SQLException e) {}// 不可能
+                }
                 return "Clob(" + clob.hashCode() + ")";
             } else if (obj instanceof byte[] || obj instanceof char[]) {
                 if (Array.getLength(obj) > 10240)
@@ -263,5 +280,17 @@ public abstract class NutStatement implements DaoStatement {
             }
             return Castors.me().castToString(obj); // TODO 太长的话,应该截取一部分
         }
+    }
+
+    public void forceExecQuery() {
+    	this.forceExecQuery = true;
+    }
+    
+    public boolean isForceExecQuery() {
+    	return forceExecQuery;
+    }
+
+    public String forPrint() {
+        return super.toString();
     }
 }

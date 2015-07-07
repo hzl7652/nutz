@@ -10,6 +10,29 @@ import java.util.regex.Pattern;
 public abstract class Nums {
 
     /**
+     * 一个数的字面量的进制和值
+     */
+    public static class Radix {
+        Radix(String val, int radix) {
+            this.val = val;
+            this.radix = radix;
+        }
+
+        public int radix;
+        public String val;
+    }
+
+    public static Radix evalRadix(String str) {
+        if (str.startsWith("0x"))
+            return new Radix(str.substring(2), 16);
+        if (str.startsWith("0") && str.length() > 1)
+            return new Radix(str.substring(1), 8);
+        if (str.startsWith("0b"))
+            return new Radix(str.substring(2), 2);
+        return new Radix(str, 10);
+    }
+
+    /**
      * 将一个字符串变成一个整型数组，如果字符串不符合规则，对应的元素为 -1 <br>
      * 比如：
      * 
@@ -119,8 +142,7 @@ public abstract class Nums {
         boolean[] ns = new boolean[ss.length];
         for (int i = 0; i < ns.length; i++) {
             try {
-                ns[i] = Pattern.matches("^(1|yes|true|on)$",
-                                        ss[i].toLowerCase());
+                ns[i] = Pattern.matches("^(1|yes|true|on)$", ss[i].toLowerCase());
             }
             catch (NumberFormatException e) {
                 ns[i] = false;
@@ -130,13 +152,24 @@ public abstract class Nums {
     }
 
     /**
-     * @param arr
-     * @param v
-     * @return 第一个匹配元素的下标
+     * @see #indexOf(int[], int, int)
      */
     public static int indexOf(int[] arr, int v) {
+        return indexOf(arr, v, 0);
+    }
+
+    /**
+     * @param arr
+     *            数组
+     * @param v
+     *            值
+     * @param off
+     *            从那个下标开始搜索(包含)
+     * @return 第一个匹配元素的下标
+     */
+    public static int indexOf(int[] arr, int v, int off) {
         if (null != arr)
-            for (int i = 0; i < arr.length; i++) {
+            for (int i = off; i < arr.length; i++) {
                 if (arr[i] == v)
                     return i;
             }
@@ -146,7 +179,7 @@ public abstract class Nums {
     /**
      * @param arr
      * @param v
-     * @return 第一个匹配元素的下标
+     * @return 最后一个匹配元素的下标
      */
     public static int lastIndexOf(int[] arr, int v) {
         if (null != arr)
@@ -158,13 +191,29 @@ public abstract class Nums {
     }
 
     /**
-     * @param arr
-     * @param v
-     * @return 第一个匹配元素的下标
+     * @see #indexOf(char[], char, int)
      */
     public static int indexOf(char[] arr, char v) {
         if (null != arr)
             for (int i = 0; i < arr.length; i++) {
+                if (arr[i] == v)
+                    return i;
+            }
+        return -1;
+    }
+
+    /**
+     * @param arr
+     *            数组
+     * @param v
+     *            值
+     * @param off
+     *            从那个下标开始搜索(包含)
+     * @return 第一个匹配元素的下标
+     */
+    public static int indexOf(char[] arr, char v, int off) {
+        if (null != arr)
+            for (int i = off; i < arr.length; i++) {
                 if (arr[i] == v)
                     return i;
             }
@@ -186,13 +235,24 @@ public abstract class Nums {
     }
 
     /**
-     * @param arr
-     * @param v
-     * @return 第一个匹配元素的下标
+     * @see #indexOf(long[], long, int)
      */
     public static int indexOf(long[] arr, long v) {
+        return indexOf(arr, v, 0);
+    }
+
+    /**
+     * @param arr
+     *            数组
+     * @param v
+     *            值
+     * @param off
+     *            从那个下标开始搜索(包含)
+     * @return 第一个匹配元素的下标
+     */
+    public static int indexOf(long[] arr, long v, int off) {
         if (null != arr)
-            for (int i = 0; i < arr.length; i++) {
+            for (int i = off; i < arr.length; i++) {
                 if (arr[i] == v)
                     return i;
             }
