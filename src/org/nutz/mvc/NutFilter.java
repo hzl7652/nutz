@@ -31,15 +31,15 @@ import org.nutz.mvc.config.FilterNutConfig;
  */
 public class NutFilter implements Filter {
 	
-	private static final Log log = Logs.get();
+	protected static Log log;
 
     protected ActionHandler handler;
 
-    private static final String IGNORE = "^.+\\.(jsp|png|gif|jpg|js|css|jspx|jpeg|swf|ico)$";
+    protected static final String IGNORE = "^.+\\.(jsp|png|gif|jpg|js|css|jspx|jpeg|swf|ico)$";
 
     protected Pattern ignorePtn;
 
-    private String selfName;
+    protected String selfName;
 
     protected SessionProvider sp;
 
@@ -61,6 +61,7 @@ public class NutFilter implements Filter {
     protected ServletContext sc;
 
     public void init(FilterConfig conf) throws ServletException {
+        log = Logs.getLog(getClass());
     	sc = conf.getServletContext();
     	Mvcs.setServletContext(sc);
     	if ("true".equals(Strings.sNull(conf.getInitParameter("skip-mode"), "false").toLowerCase())) {
@@ -124,7 +125,7 @@ public class NutFilter implements Filter {
             handler.depose();
         Mvcs.close();
         Mvcs.setServletContext(null);
-        Mvcs.ctx().reqThreadLocal.set(null);
+        Mvcs.ctx().reqThreadLocal.remove();
     }
     
     /**
@@ -148,12 +149,8 @@ public class NutFilter implements Filter {
 	    		return true;
     		}
     	}
-    	if (exclusionPaths != null) {
-    		for (String exclusionPath : exclusionPaths) {
-				if (exclusionPath.equals(matchUrl)) {
-		    		return true;
-				}
-			}
+    	if (exclusionPaths != null && exclusionPaths.contains(matchUrl)) {
+    		return true;
     	}
     	return false;
     }
@@ -168,8 +165,7 @@ public class NutFilter implements Filter {
     	}
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)resp;
-        RequestPath path = Mvcs.getRequestPathObject(request);
-        String matchUrl = path.getUrl();
+        String matchUrl = request.getServletPath() + Strings.sBlank(request.getPathInfo());
         
         String preName = Mvcs.getName();
         Context preContext = Mvcs.resetALL();
@@ -196,7 +192,8 @@ public class NutFilter implements Filter {
                 if (preContext != null)
                     Mvcs.ctx().reqThreadLocal.set(preContext);
             } else {
-                Mvcs.ctx().reqThreadLocal.set(null);
+                Mvcs.ctx().reqThreadLocal.remove();
+                Mvcs.setServletContext(null);
             }
         }
     }

@@ -126,12 +126,10 @@ public abstract class AbstractJdbcExpert implements JdbcExpert {
 
         try {
             dropRelation(dao, en);
-            if (tableName.equals(viewName)) {
-                dao.execute(Sqls.create("DROP TABLE " + tableName));
-            } else {
-                dao.execute(Sqls.create("DROP VIEW " + viewName),
-                            Sqls.create("DROP TABLE " + tableName));
+            if (!tableName.equals(viewName) && dao.exists(viewName)) {
+                dao.execute(Sqls.create("DROP VIEW " + viewName));
             }
+            dao.execute(Sqls.create("DROP TABLE " + tableName));
         }
         catch (Exception e) {
             return false;
@@ -150,7 +148,7 @@ public abstract class AbstractJdbcExpert implements JdbcExpert {
         return "SELECT * FROM " + en.getViewName() + " where 1!=1";
     }
 
-    protected void createRelation(Dao dao, Entity<?> en) {
+    public void createRelation(Dao dao, Entity<?> en) {
         final List<Sql> sqls = new ArrayList<Sql>(5);
         for (LinkField lf : en.visitManyMany(null, null, null)) {
             ManyManyLinkField mm = (ManyManyLinkField) lf;
@@ -222,6 +220,10 @@ public abstract class AbstractJdbcExpert implements JdbcExpert {
             if (mf.getTypeMirror().isDouble())
                 return "NUMERIC(15,10)";
             return "FLOAT";
+        case PSQL_ARRAY:
+            return "ARRAY";
+        case PSQL_JSON:
+            return "JSON";
         }
         throw Lang.makeThrow(    "Unsupport colType '%s' of field '%s' in '%s' ",
                                 mf.getColumnType(),
@@ -365,5 +367,14 @@ public abstract class AbstractJdbcExpert implements JdbcExpert {
     		return sb.toString();
     	}
     	return name;
+    }
+    
+    public void addDefaultValue(StringBuilder sb, MappingField mf) {
+        if (!mf.hasDefaultValue())
+            return;
+        if (mf.getTypeMirror().isNumber())
+            sb.append(" DEFAULT ").append(getDefaultValue(mf));
+        else
+            sb.append(" DEFAULT '").append(getDefaultValue(mf)).append('\'');
     }
 }

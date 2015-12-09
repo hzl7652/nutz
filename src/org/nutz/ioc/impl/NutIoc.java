@@ -2,6 +2,7 @@ package org.nutz.ioc.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,8 @@ public class NutIoc implements Ioc2 {
     private static final Log log = Logs.get();
 
     private static final String DEF_SCOPE = "app";
+    
+    protected Date createTime;
 
     /**
      * 读取配置文件的 Loader
@@ -90,6 +93,8 @@ public class NutIoc implements Ioc2 {
                      IocContext context,
                      String defaultScope,
                      MirrorFactory mirrors) {
+        log.info("NutIoc init begin ...");
+        this.createTime = new Date();
         this.maker = maker;
         this.defaultScope = defaultScope;
         this.context = context;
@@ -105,6 +110,7 @@ public class NutIoc implements Ioc2 {
             this.mirrors = new DefaultMirrorFactory(this);
         else
             this.mirrors = mirrors;
+        log.info("... NutIoc init complete");
     }
 
     /**
@@ -231,10 +237,12 @@ public class NutIoc implements Ioc2 {
                 log.info("You can't depose a Ioc twice!");
             return;
         }
+        if (log.isInfoEnabled())
+            log.infof("Closing %s@%s startup date [%s]", getClass(), hashCode(), this.createTime);
         context.depose();
         deposed = true;
-        if (log.isDebugEnabled())
-            log.debug("!!!Ioc is deposed, you can't use it anymore");
+        if (log.isInfoEnabled())
+            log.infof("%s@%s is deposed.", getClass(), hashCode());
     }
 
     public void reset() {
@@ -292,8 +300,11 @@ public class NutIoc implements Ioc2 {
     @Override
     protected void finalize() throws Throwable {
         if (!deposed) {
-            if (log.isInfoEnabled())
-                log.info("Ioc depose tigger by finalize(), not a good idea!");
+            log.error("Ioc depose tigger by GC!!!\n"
+                    + "Common Reason for that is YOUR code call 'new NutIoc(...)',"
+                    + " and then get some beans(most is Dao) from it and abandon it!!!\n"
+                    + "If using nutz.mvc, call Mvcs.ctx().getDefaultIoc() to get ioc container.\n"
+                    + "Not nutz.mvc? use like this:     public static Ioc ioc;");
             depose();
         }
         super.finalize();

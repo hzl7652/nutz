@@ -58,6 +58,8 @@ public class OracleJdbcExpert extends AbstractJdbcExpert {
         StringBuilder sb = new StringBuilder("CREATE TABLE " + en.getTableName() + "(");
         // 创建字段
         for (MappingField mf : en.getMappingFields()) {
+            if (mf.isReadonly())
+                continue;
             sb.append('\n').append(mf.getColumnName());
             sb.append(' ').append(evalFieldType(mf));
             // 非主键的 @Name，应该加入唯一性约束
@@ -71,7 +73,7 @@ public class OracleJdbcExpert extends AbstractJdbcExpert {
                 if (mf.isNotNull())
                     sb.append(" NOT NULL");
                 if (mf.hasDefaultValue())
-                    sb.append(" DEFAULT '").append(getDefaultValue(mf)).append('\'');
+                    addDefaultValue(sb, mf);
                 if (mf.isUnsigned()) // 有点暴力
                     sb.append(" Check ( ").append(mf.getColumnName()).append(" >= 0)");
             }

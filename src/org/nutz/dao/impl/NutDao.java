@@ -101,14 +101,8 @@ public class NutDao extends DaoSupport implements Dao {
         _pojo_queryRecord = new PojoQueryRecordCallback();
         _pojo_fetchRecord = new PojoFetchRecordCallback();
         _pojo_eachRecord = new PojoEachRecordCallback();
-
-        // check for spring DataSourceTransactionManager
-        for (StackTraceElement ele : Thread.currentThread().getStackTrace()) {
-            if (ele.getClassName().startsWith("org.springframework")) {
-                log.info("Note: Make sure set SpringDaoRunner if using DataSourceTransactionManager.");
-                break;
-            }
-        }
+        if (log.isDebugEnabled())
+            log.debugf("%s[_selfId=%d] init ...", getClass().getSimpleName(), _selfId);
     }
 
     public NutDao(DataSource dataSource) {
@@ -471,6 +465,7 @@ public class NutDao extends DaoSupport implements Dao {
         expert.formatQuery(pojo);
         pojo.setAfter(_pojo_eachEntity);
         pojo.getContext().attr(Each.class.getName(), callback);
+        pojo.getContext().attr("dao-cache-skip", "true");
         _exec(pojo);
         return pojo.getInt();
     }
@@ -502,6 +497,7 @@ public class NutDao extends DaoSupport implements Dao {
         expert.formatQuery(pojo);
         pojo.setAfter(_pojo_eachRecord);
         pojo.getContext().attr(Each.class.getName(), callback);
+        pojo.getContext().attr("dao-cache-skip", "true");
         _exec(pojo);
         return pojo.getInt();
     }
@@ -966,5 +962,11 @@ public class NutDao extends DaoSupport implements Dao {
             this.dataSource = null;
             setDataSource(ds);
         }
+    }
+    
+    public Sql execute(Sql sql) {
+        if (sql != null)
+            execute(new Sql[]{sql});
+        return sql;
     }
 }
