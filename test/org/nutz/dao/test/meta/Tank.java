@@ -2,7 +2,12 @@ package org.nutz.dao.test.meta;
 
 import java.util.Map;
 
-import org.nutz.dao.entity.annotation.*;
+import org.nutz.dao.entity.annotation.Column;
+import org.nutz.dao.entity.annotation.Id;
+import org.nutz.dao.entity.annotation.ManyMany;
+import org.nutz.dao.entity.annotation.Name;
+import org.nutz.dao.entity.annotation.One;
+import org.nutz.dao.entity.annotation.Table;
 
 @Table("dao_d_tank_${id}")
 public class Tank {
@@ -21,7 +26,7 @@ public class Tank {
     @Name
     private String code;
 
-    @Column
+    @Column("motor_name")
     private String motorName;
 
     @Column

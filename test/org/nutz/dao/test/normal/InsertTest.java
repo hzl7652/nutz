@@ -34,7 +34,7 @@ public class InsertTest extends DaoCase {
             });
         }
         catch (RuntimeException e) {}
-        assertEquals(0, dao.count(Pet.class));
+        assertEquals(10, dao.count(Pet.class));
         // 插入后，主动抛出一个错误，看回滚不回滚
         try {
             final Pet[] pets2 = Pet.create(10);

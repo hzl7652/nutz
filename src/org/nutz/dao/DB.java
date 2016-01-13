@@ -36,21 +36,25 @@ public enum DB {
      */
     SQLITE,
     /**
-     * 
+     *
      */
     HSQL,
     /**
-     * 
+     *
      */
     DERBY,
     /**
-     * 
+     *
      */
     GBASE,
     /**
-     * 
+     *
      */
     SYBASE,
+    /**
+     *
+     */
+    GBASE8T,
     /**
      * 其他数据库
      */

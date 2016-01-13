@@ -1,6 +1,6 @@
 package org.nutz.dao.test.sqls;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.nutz.dao.Sqls;
@@ -18,13 +18,13 @@ public class CallbackTest extends DaoCase {
         pojos.initPet();
         dao.insert(Pet.create(4));
 
-        Sql sql = Sqls.create("SELECT 'pet_02' IN (SELECT name FROM t_pet)");
+        Sql sql = Sqls.create("SELECT bool_p from dao_supported_type");
         sql.setCallback(new FetchBooleanCallback());
         dao.execute(sql);
         boolean pet02IsExsit = sql.getBoolean();
         assertEquals(true, pet02IsExsit);
 
-        sql = Sqls.create("SELECT 'pet_05' IN (SELECT name FROM t_pet)");
+        sql = Sqls.create("SELECT bool_obj from dao_supported_type");
         sql.setCallback(new FetchBooleanCallback());
         dao.execute(sql);
         boolean pet05IsExsit = sql.getBoolean();

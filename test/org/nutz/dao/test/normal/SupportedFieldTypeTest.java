@@ -8,11 +8,14 @@ import java.sql.Time;
 import java.sql.Timestamp;
 
 import org.junit.Test;
-
 import org.nutz.castor.Castors;
 import org.nutz.castor.FailToCastObjectException;
 import org.nutz.dao.Chain;
-import org.nutz.dao.entity.annotation.*;
+import org.nutz.dao.entity.annotation.Column;
+import org.nutz.dao.entity.annotation.Default;
+import org.nutz.dao.entity.annotation.Id;
+import org.nutz.dao.entity.annotation.Name;
+import org.nutz.dao.entity.annotation.Table;
 import org.nutz.dao.test.DaoCase;
 import org.nutz.lang.Lang;
 import org.nutz.lang.Mirror;
@@ -62,13 +65,13 @@ public class SupportedFieldTypeTest extends DaoCase {
         @Column
         public Character char_obj;
 
-        @Column
+        @Column("sqldate")
         public Date sqlDate;
 
-        @Column
+        @Column("sqltime")
         public Time sqlTime;
 
-        @Column
+        @Column("sqldt")
         public Timestamp sqlDT;
 
         @Column
@@ -187,7 +190,8 @@ public class SupportedFieldTypeTest extends DaoCase {
             Object expValue;
             Object ttValue;
             // Mysql 5.0.18， 会去掉毫秒数
-            if (f.getName().equals("sqlTime") &&  
+            if (f.getName().equals("sqlTime")
+                &&
                     (dao.meta().isMySql() || dao.meta().isHsql())) {
                 expValue = me.getValue(exp, f).toString();
                 ttValue = me.getValue(et, f).toString();

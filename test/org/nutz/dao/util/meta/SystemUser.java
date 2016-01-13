@@ -14,23 +14,23 @@ public class SystemUser {
 
     @Id
     private long id;
-    
+
     @Name
     @Column("nm")
     private String name;
-    
+
     /**
      * 关联字段必须写出来
      */
-    @Column("t_Id")
+    @Column("t_id")
     private int teamId;
-    
+
     /**
      * @One的field对应当前类(SystemUser)的关联属性teamId
      */
     @One(target=SystemTeam.class, field = "teamId")/**在field填写的本*/
     private SystemTeam team;
-    
+
     /**
      * 在@Many中, field对应的是目标类(SystemJob)中的关联属性userId, 注意与@One的区别
      */
@@ -76,6 +76,5 @@ public class SystemUser {
     public void setJobs(List<SystemJob> jobs) {
         this.jobs = jobs;
     }
-    
-    
+
 }
