@@ -32,11 +32,14 @@ import org.nutz.dao.TableName;
 import org.nutz.dao.entity.Entity;
 import org.nutz.dao.entity.EntityField;
 import org.nutz.dao.entity.EntityIndex;
+import org.nutz.dao.entity.LinkField;
 import org.nutz.dao.entity.MappingField;
 import org.nutz.dao.entity.annotation.ColType;
 import org.nutz.dao.entity.annotation.Table;
 import org.nutz.dao.impl.NutDao;
+import org.nutz.dao.impl.entity.field.ManyManyLinkField;
 import org.nutz.dao.impl.jdbc.AbstractJdbcExpert;
+import org.nutz.dao.impl.sql.SqlFormat;
 import org.nutz.dao.jdbc.JdbcExpert;
 import org.nutz.dao.jdbc.Jdbcs;
 import org.nutz.dao.jdbc.ValueAdaptor;
@@ -45,6 +48,7 @@ import org.nutz.dao.sql.Sql;
 import org.nutz.dao.sql.SqlCallback;
 import org.nutz.lang.Lang;
 import org.nutz.lang.Strings;
+import org.nutz.lang.random.R;
 import org.nutz.lang.segment.CharSegment;
 import org.nutz.lang.util.Callback2;
 import org.nutz.log.Log;
@@ -351,10 +355,14 @@ public abstract class Daos {
      * 查询某sql的结果条数
      */
     public static long queryCount(Dao dao, String sql) {
+    	String tmpTable = "as _nutz_tmp";
+    	if (dao.meta().isDB2())
+    	    tmpTable = "as nutz_tmp_" + R.UU32();
+    	else if (!dao.meta().isOracle())
+    		tmpTable += "_" + R.UU32();
         Sql sql2 = Sqls.fetchInt("select count(1) from ("
                                  + sql
-                                 + ") as _nutz_tmp_"
-                                 + System.currentTimeMillis());
+                                 + ")" + tmpTable);
         dao.execute(sql2);
         return sql2.getInt();
     }
@@ -384,7 +392,7 @@ public abstract class Daos {
                 mf = en.getField(head.name());
             String colName = head.name();
             if (mf != null)
-                colName = mf.getColumnName();
+                colName = mf.getColumnNameInSql();
             sql.append(colName).append("=");
             if (head.special()) {
                 if (head.value() != null && head.value() instanceof String) {
@@ -461,7 +469,7 @@ public abstract class Daos {
             if (en != null) {
                 mf = en.getField(colName);
                 if (mf != null)
-                    colName = mf.getColumnName();
+                    colName = mf.getColumnNameInSql();
             }
             sql.append(colName);
 
@@ -505,7 +513,7 @@ public abstract class Daos {
     }
 
     /**
-     * 为特定package下带@Table注解的类调用dao.create(XXX.class, force), 批量建表
+     * 为特定package下带@Table注解的类调用dao.create(XXX.class, force), 批量建表,优先建立带@ManyMany的表
      * 
      * @param dao
      *            Dao实例
@@ -515,10 +523,25 @@ public abstract class Daos {
      *            如果表存在,是否先删后建
      */
     public static void createTablesInPackage(Dao dao, String packageName, boolean force) {
-        for (Class<?> klass : Scans.me().scanPackage(packageName)) {
-            if (klass.getAnnotation(Table.class) != null)
-                dao.create(klass, force);
+    	List<Class<?>> list = new ArrayList<Class<?>>();
+        OUT: for (Class<?> klass : Scans.me().scanPackage(packageName)) {
+            if (klass.getAnnotation(Table.class) != null) {
+            	Entity<?> en = dao.getEntity(klass);
+            	List<LinkField> tmp = en.getLinkFields(null);
+            	if (tmp != null && tmp.size() > 0) {
+            		for (LinkField lf : tmp) {
+            			if (lf instanceof ManyManyLinkField) {
+            				list.add(0, klass); // 优先建立带@ManyMany的表
+            				continue OUT;
+            			}
+					}
+            	}
+                list.add(klass);
+            }
         }
+    	for (Class<?> klass : list) {
+			dao.create(klass, force);
+		}
     }
 
     /**
@@ -603,7 +626,7 @@ public abstract class Daos {
             throw Lang.impossible();
         }
 
-        List<MappingField> mfs = en.getMappingFields();
+        List<MappingField> mfs = new ArrayList<MappingField>(en.getMappingFields());
         if (matcher != null) {
             Iterator<MappingField> it = mfs.iterator();
             while (it.hasNext()) {
@@ -664,7 +687,7 @@ public abstract class Daos {
     }
 
     public static void migration(Dao dao, final Class<?> klass, final boolean add, final boolean del) {
-        migration(dao, klass, add, del, true, null);
+        migration(dao, klass, add, del, false, null);
     }
 
     public static void migration(Dao dao,
@@ -672,7 +695,7 @@ public abstract class Daos {
                                  final boolean add,
                                  final boolean del,
                                  Object obj) {
-        migration(dao, klass, add, del, true, obj);
+        migration(dao, klass, add, del, false, obj);
     }
 
     /**
@@ -876,7 +899,7 @@ public abstract class Daos {
             for (EntityField field : index.getFields()) {
                 if (field instanceof MappingField) {
                     MappingField mf = (MappingField) field;
-                    sb.append(mf.getColumnName()).append(',');
+                    sb.append(mf.getColumnNameInSql()).append(',');
                 } else {
                     throw Lang.makeThrow(DaoException.class,
                                          "%s %s is NOT a mapping field, can't use as index field!!",
@@ -955,7 +978,7 @@ public abstract class Daos {
      *            是否允许添加
      * @param del
      *            是否允许删除
-     * @param 是否检查索引
+     * @param checkIndex 是否检查索引
      */
     public static void migration(Dao dao,
                                  String packageName,
@@ -1009,6 +1032,32 @@ public abstract class Daos {
         });
         return name[0];
     }
+
+    private static SqlFormat sqlFormat = SqlFormat.full;
+
+    public static SqlFormat getSqlFormat() {
+        return sqlFormat;
+    }
+
+    public static void setSqlFormat(SqlFormat sqlFormat) {
+        Daos.sqlFormat = sqlFormat;
+    }
+
+    public static Set<String> sql2003Keywords() {
+        Set<String> keywords = new HashSet<String>();
+        String k = "ADD,ALL,ALLOCATE,ALTER,AND,ANY,ARE,ARRAY,AS,ASENSITIVE,ASYMMETRIC,AT,ATOMIC,AUTHORIZATION,BEGIN,BETWEEN,BIGINT,BINARY,BLOB,BOOLEAN,BOTH,BY,CALL,CALLED,CASCADED,CASE,CAST,CHAR,CHARACTER,CHECK,CLOB,CLOSE,COLLATE,COLUMN,COMMIT,CONDITION,CONNECT,CONSTRAINT,CONTINUE,CORRESPONDING,CREATE,CROSS,CUBE,CURRENT,CURRENT_DATE,CURRENT_DEFAULT_TRANSFORM_GROUP,CURRENT_PATH,CURRENT_ROLE,CURRENT_TIME,CURRENT_TIMESTAMP,CURRENT_TRANSFORM_GROUP_FOR_TYPE,CURRENT_USER,CURSOR,CYCLE,DATE,DAY,DEALLOCATE,DEC,DECIMAL,DECLARE,DEFAULT,DELETE,DEREF,DESCRIBE,DETERMINISTIC,DISCONNECT,DISTINCT,DO,DOUBLE,DROP,DYNAMIC,EACH,ELEMENT,ELSE,ELSEIF,END,ESCAPE,EXCEPT,EXEC,EXECUTE,EXISTS,EXIT,EXTERNAL,FALSE,FETCH,FILTER,FLOAT,FOR,FOREIGN,FREE,FROM,FULL,FUNCTION,GET,GLOBAL,GRANT,GROUP,GROUPING,HANDLER,HAVING,HOLD,HOUR,IDENTITY,IF,IMMEDIATE,IN,INDICATOR,INNER,INOUT,INPUT,INSENSITIVE,INSERT,INT,INTEGER,INTERSECT,INTERVAL,INTO,IS,ITERATE,JOIN,LANGUAGE,LARGE,LATERAL,LEADING,LEAVE,LEFT,LIKE,LOCAL,LOCALTIME,LOCALTIMESTAMP,LOOP,MATCH,MEMBER,MERGE,METHOD,MINUTE,MODIFIES,MODULE,MONTH,MULTISET,NATIONAL,NATURAL,NCHAR,NCLOB,NEW,NO,NONE,NOT,NULL,NUMERIC,OF,OLD,ON,ONLY,OPEN,OR,ORDER,OUT,OUTER,OUTPUT,OVER,OVERLAPS,PARAMETER,PARTITION,PRECISION,PREPARE,PROCEDURE,RANGE,READS,REAL,RECURSIVE,REF,REFERENCES,REFERENCING,RELEASE,REPEAT,RESIGNAL,RESULT,RETURN,RETURNS,REVOKE,RIGHT,ROLLBACK,ROLLUP,ROW,ROWS,SAVEPOINT,SCOPE,SCROLL,SEARCH,SECOND,SELECT,SENSITIVE,SESSION_USER,SET,SIGNAL,SIMILAR,SMALLINT,SOME,SPECIFIC,SPECIFICTYPE,SQL,SQLEXCEPTION,SQLSTATE,SQLWARNING,START,STATIC,SUBMULTISET,SYMMETRIC,SYSTEM,SYSTEM_USER,TABLE,TABLESAMPLE,THEN,TIME,TIMESTAMP,TIMEZONE_HOUR,TIMEZONE_MINUTE,TO,TRAILING,TRANSLATION,TREAT,TRIGGER,TRUE,UNDO,UNION,UNIQUE,UNKNOWN,UNNEST,UNTIL,UPDATE,USER,USING,VALUE,VALUES,VARCHAR,VARYING,WHEN,WHENEVER,WHERE,WHILE,WINDOW,WITH,WITHIN,WITHOUT,YEAR";
+        for (String keyword : k.split(",")) {
+            keywords.add(keyword);
+        }
+        keywords.remove("VALUE");
+        keywords.remove("SQL");
+        keywords.remove("YEAR");
+        return keywords;
+    }
+    
+    public static boolean CHECK_COLUMN_NAME_KEYWORD = true;
+    public static boolean FORCE_WRAP_COLUMN_NAME = false;
+    public static boolean FORCE_UPPER_COLUMN_NAME = false;
 }
 
 class ExtDaoInvocationHandler implements InvocationHandler {
@@ -1055,5 +1104,4 @@ class ExtDaoInvocationHandler implements InvocationHandler {
             TableName.run(tableName, m);
         return m.getObj();
     }
-
 }

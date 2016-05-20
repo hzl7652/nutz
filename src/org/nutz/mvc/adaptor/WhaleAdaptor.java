@@ -1,5 +1,15 @@
 package org.nutz.mvc.adaptor;
 
+import java.io.File;
+import java.io.InputStream;
+import java.io.Reader;
+import java.lang.reflect.Type;
+import java.util.Map;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.nutz.filepool.FilePool;
 import org.nutz.filepool.UU32FilePool;
 import org.nutz.json.Json;
@@ -9,21 +19,16 @@ import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.Param;
-import org.nutz.mvc.upload.*;
+import org.nutz.mvc.upload.FastUploading;
+import org.nutz.mvc.upload.FieldMeta;
+import org.nutz.mvc.upload.TempFile;
+import org.nutz.mvc.upload.UploadException;
+import org.nutz.mvc.upload.UploadingContext;
 import org.nutz.mvc.upload.injector.*;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 自动适配普通表单/文件上传表单/Json表单的数据
+ * 
  */
 public class WhaleAdaptor extends PairAdaptor {
 	
@@ -53,6 +58,7 @@ public class WhaleAdaptor extends PairAdaptor {
         uploadCtx = up;
     }
 	
+	@SuppressWarnings("deprecation")
 	protected ParamInjector evalInjectorBy(Type type, Param param) {
         // TODO 这里的实现感觉很丑, 感觉可以直接用type进行验证与传递
         // TODO 这里将Type的影响局限在了 github issue #30 中提到的局部范围
@@ -88,8 +94,9 @@ public class WhaleAdaptor extends PairAdaptor {
         if (Reader.class.isAssignableFrom(clazz))
             return new ReaderInjector(paramName);
         // List
-        if (List.class.isAssignableFrom(clazz))
-            return new MapListInjector(paramName);
+        //if (List.class.isAssignableFrom(clazz)) {
+        //    return new MapListInjector(paramName);
+        //}
         if (TempFile[].class.isAssignableFrom(clazz)) {
             return new TempFileArrayInjector(paramName);
         }

@@ -71,6 +71,7 @@ public class NutLoading implements Loading {
             if (config.getServletContext().getMajorVersion() > 2
                 || config.getServletContext().getMinorVersion() > 4)
                 log.debugf(" - ContextPath     : %s", config.getServletContext().getContextPath());
+            log.debugf(" - context.tempdir : %s", config.getAttribute("javax.servlet.context.tempdir"));
         }
         /*
          * 准备返回值
@@ -217,6 +218,10 @@ public class NutLoading implements Loading {
         } else {
             log.infof("Found %d module methods", atMethods);
         }
+        
+        config.setUrlMapping(mapping);
+        config.setActionChainMaker(maker);
+        config.setViewMakers(makers);
 
         return mapping;
     }
@@ -286,6 +291,10 @@ public class NutLoading implements Loading {
                     setup.init(config);
                 }
             }
+        } else if (Setup.class.isAssignableFrom(mainModule)) { // MainModule自己就实现了Setup接口呢?
+        	Setup setup = (Setup)Mirror.me(mainModule).born();
+        	config.setAttributeIgnoreNull(Setup.class.getName(), setup);
+        	setup.init(config);
         }
     }
 
@@ -353,7 +362,7 @@ public class NutLoading implements Loading {
         if (log.isDebugEnabled()) {
             StringBuilder sb = new StringBuilder();
             for (ViewMaker maker : makers) {
-                sb.append(maker.getClass().getSimpleName()).append(",");
+                sb.append(maker.getClass().getSimpleName()).append(".class,");
             }
             sb.setLength(sb.length() - 1);
             log.debugf("@Views(%s)", sb);

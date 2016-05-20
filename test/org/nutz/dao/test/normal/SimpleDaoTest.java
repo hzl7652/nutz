@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -668,5 +669,51 @@ public class SimpleDaoTest extends DaoCase {
                 e.printStackTrace();
             }
         }
+    }
+    
+    @Test
+    public void test_insert_ignore_null() {
+    	Pet pet = Pet.create(R.UU32());
+    	dao.insert(pet, true, true, true);
+    	assertTrue(pet.getId() > 0);
+    	dao.insert(Pet.create(1000), true, true, true);
+    }
+    
+
+    @Test
+    public void test_daos_queryCount() {
+    	String str = "select * from t_pet";
+    	Daos.queryCount(dao, str);
+    }
+
+
+    @Test
+    public void test_cnd_andEX_orEX() {
+        String emtryStr = "";
+        Object[] ids = new Object[0];
+        List<String> names = new ArrayList<String>();
+
+        Cnd cnd = Cnd.NEW();
+
+        cnd.andEX("name", "=", emtryStr); // 空字符串,所以该条件不生效
+        cnd.andEX("name", "=", "wendal");
+        cnd.orEX("id", "in", ids);
+        cnd.orEX("id", ">", 1);
+        cnd.andEX("names", "in", names);
+
+        assertEquals("WHERE name='wendal' OR id>1", cnd.toString().trim());
+    }
+    
+    @Test
+    public void test_insert_chain_with_null() {
+        dao.create(Pet.class, true);
+        dao.insert("t_pet", Chain.make("name", "wendal").add("alias", null));
+    }
+    
+    @Test
+    public void test_cnd_emtry_in() {
+        assertEquals(" WHERE  1 != 1 ", Cnd.where("name", "in", Collections.EMPTY_LIST).toString());
+        assertEquals(" WHERE  1 != 1 ", Cnd.where("name", "in", new String[0]).toString());
+        assertEquals(" WHERE  1 != 1 ", Cnd.where("id", "in", new int[]{}).toString());
     }
 }

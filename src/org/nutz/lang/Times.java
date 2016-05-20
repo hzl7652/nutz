@@ -482,6 +482,20 @@ public abstract class Times {
                + ":"
                + Strings.alignRight(ss[2], 2, '0');
     }
+    
+    /**
+     * 将一个秒数（天中），转换成一个格式为 HH:mm 的字符串（精确到分钟）
+     * 
+     * @param sec
+     *            秒数
+     * @return 格式为 HH:mm:ss 的字符串
+     */
+    public static String sTmin(int sec) {
+        int[] ss = T(sec);
+        return Strings.alignRight(ss[0], 2, '0')
+               + ":"
+               + Strings.alignRight(ss[1], 2, '0');
+    }
 
     /**
      * 以本周为基础获得某一周的时间范围
@@ -831,13 +845,13 @@ public abstract class Times {
                    + (useEnglish ? TIME_H_EN : TIME_H_CN)
                    + _fromMillis(mi - h * T_1H, useEnglish);
         }
-        if (mi >= T_1D) {
-            int d = (int) (mi / T_1D);
-            return d
+        //if (mi >= T_1D) {
+        int d = (int) (mi / T_1D);
+        return d
                    + (useEnglish ? TIME_D_EN : TIME_D_CN)
                    + _fromMillis(mi - d * T_1D, useEnglish);
-        }
+        //}
         // WTF ?
-        throw Lang.impossible();
+        //throw Lang.impossible();
     }
 }

@@ -142,7 +142,7 @@ public abstract class Chain {
     
     /** 
      * 当前结点是不是特殊结点
-     * @return
+     * @return 是不是特殊结点
      */
     public abstract boolean special();
     
@@ -201,9 +201,8 @@ public abstract class Chain {
                     if (null == v) {
                         if (fm.isIgnoreNull())
                             continue;
-                    } else if (fm.isIgnoreBlankStr() && v instanceof String) {
-                        if (Strings.isBlank((String)v))
-                            continue;
+                    } else if (fm.isIgnoreBlankStr() && v instanceof String && Strings.isBlank((String)v)) {
+                        continue;
                     }
                 }
                 if (c == null) {
@@ -225,9 +224,8 @@ public abstract class Chain {
                 if (null == v) {
                     if (fm.isIgnoreNull())
                         continue;
-                } else if (fm.isIgnoreBlankStr() && v instanceof String) {
-                    if (Strings.isBlank((String)v))
-                        continue;
+                } else if (fm != null && fm.isIgnoreBlankStr() && v instanceof String && Strings.isBlank((String)v)) {
+                    continue;
                 }
                 if (c == null) {
                     c = Chain.make(f.getName(), v);
@@ -356,7 +354,9 @@ public abstract class Chain {
         public boolean isSpecial() {
             Entry entry = head;
             do {
-                if(entry.special) return true;
+                if(entry.special) {
+                    return true;
+                }
             } while ((entry = entry.next) != null);
             return false;
         }
@@ -375,7 +375,7 @@ public abstract class Chain {
                 while (current != null) {
                     MappingField ef = entity.getField(current.name);
                     if (null != ef) {
-                        current.name = ef.getColumnName();
+                        current.name = ef.getColumnNameInSql();
                     }
                     current = current.next;
                 }

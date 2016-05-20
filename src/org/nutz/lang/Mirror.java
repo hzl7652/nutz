@@ -883,6 +883,8 @@ public class Mirror<T> {
         if (!klass.isPrimitive()) {
             if (this.isPrimitiveNumber() || this.is(Boolean.class) || this.is(Character.class))
                 return klass;
+            if (Number.class.isAssignableFrom(klass))
+                return klass;
             throw Lang.makeThrow("Class '%s' should be a primitive class", klass.getName());
         }
         // TODO 用散列能快一点
@@ -1105,7 +1107,7 @@ public class Mirror<T> {
      *            方法名
      * @param args
      *            参数样例
-     * @return
+     * @return 符合条件的方法
      */
     public Method findMethod(String name, Object[] args) throws NoSuchMethodException {
         if (null == args || args.length == 0)
@@ -1124,7 +1126,7 @@ public class Mirror<T> {
      * @param paramTypes
      *            参数类型列表
      * @return 方法
-     * @throws NoSuchMethodException
+     * @throws NoSuchMethodException 找不到合适方法时抛出
      */
     public Method findMethod(String name, Class<?>... paramTypes) throws NoSuchMethodException {
         try {
@@ -1171,7 +1173,7 @@ public class Mirror<T> {
      * @param paramTypes
      *            参数个数
      * @return 方法
-     * @throws NoSuchMethodException
+     * @throws NoSuchMethodException 找不到合适的方法时抛出
      */
     public Method findMethod(Class<?> returnType, Class<?>... paramTypes)
             throws NoSuchMethodException {

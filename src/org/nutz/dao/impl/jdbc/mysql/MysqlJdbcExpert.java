@@ -9,9 +9,9 @@ import org.nutz.dao.entity.Entity;
 import org.nutz.dao.entity.MappingField;
 import org.nutz.dao.entity.PkType;
 import org.nutz.dao.entity.annotation.ColType;
-import org.nutz.dao.impl.entity.macro.SqlFieldMacro;
 import org.nutz.dao.impl.jdbc.AbstractJdbcExpert;
 import org.nutz.dao.jdbc.JdbcExpertConfigFile;
+import org.nutz.dao.jdbc.ValueAdaptor;
 import org.nutz.dao.pager.Pager;
 import org.nutz.dao.sql.Pojo;
 import org.nutz.dao.sql.Sql;
@@ -70,6 +70,9 @@ public class MysqlJdbcExpert extends AbstractJdbcExpert {
         if (mf.getColumnType() == ColType.BINARY) {
             return "MediumBlob"; // 默认用16M的应该可以了吧?
         }
+        if (mf.getColumnType() == ColType.MYSQL_JSON) {
+            return "JSON";
+        }
         // 其它的参照默认字段规则 ...
         return super.evalFieldType(mf);
     }
@@ -82,7 +85,7 @@ public class MysqlJdbcExpert extends AbstractJdbcExpert {
         for (MappingField mf : en.getMappingFields()) {
             if (mf.isReadonly())
                 continue;
-            sb.append('\n').append(mf.getColumnName());
+            sb.append('\n').append(mf.getColumnNameInSql());
             sb.append(' ').append(evalFieldType(mf));
             // 非主键的 @Name，应该加入唯一性约束
             if (mf.isName() && en.getPkType() != PkType.NAME) {
@@ -133,7 +136,7 @@ public class MysqlJdbcExpert extends AbstractJdbcExpert {
             sb.append('\n');
             sb.append("PRIMARY KEY (");
             for (MappingField pk : pks) {
-                sb.append(pk.getColumnName()).append(',');
+                sb.append(pk.getColumnNameInSql()).append(',');
             }
             sb.setCharAt(sb.length() - 1, ')');
             sb.append("\n ");
@@ -173,9 +176,19 @@ public class MysqlJdbcExpert extends AbstractJdbcExpert {
     }
 
     public Pojo fetchPojoId(Entity<?> en, MappingField idField) {
-        String autoSql = "SELECT @@@@IDENTITY";
-        Pojo autoInfo = new SqlFieldMacro(idField, autoSql);
-        autoInfo.setEntity(en);
-        return autoInfo;
+//        String autoSql = "SELECT @@@@IDENTITY";
+//        Pojo autoInfo = new SqlFieldMacro(idField, autoSql);
+//        autoInfo.setEntity(en);
+//        return autoInfo;
+        return null;
+    }
+
+    @Override
+    public ValueAdaptor getAdaptor(MappingField ef) {
+        if (ColType.MYSQL_JSON == ef.getColumnType()) {
+            return new MysqlJsonAdaptor();
+        } else {
+            return super.getAdaptor(ef);
+        }
     }
 }

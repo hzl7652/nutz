@@ -1,9 +1,7 @@
 package org.nutz.img;
 
-import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
 import java.awt.geom.AffineTransform;
@@ -38,6 +36,7 @@ import javax.imageio.stream.ImageOutputStream;
 
 import org.nutz.lang.Files;
 import org.nutz.lang.Lang;
+import org.nutz.lang.Streams;
 import org.nutz.repo.Base64;
 
 /**
@@ -242,7 +241,7 @@ public class Images {
             x = 0;
             y = (h - nH) / 2;
         }
-        // 原图太长
+        // 原图太高
         else if (oR < nR) {
             nH = h;
             nW = (int) (((float) h) * oR);
@@ -257,31 +256,29 @@ public class Images {
             y = 0;
         }
 
-        // 得到一个绘制接口
-        if (bgColor != null) {
-            // 创建图像
-            BufferedImage re = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D gc = re.createGraphics();
+        // 创建图像
+        BufferedImage re = new BufferedImage(w, h, im.getType());
+        Graphics2D gc = re.createGraphics();
+        if (null != bgColor) {
             gc.setColor(bgColor);
             gc.fillRect(0, 0, w, h);
-            gc.drawImage(im, x, y, nW, nH, bgColor, null);
-            gc.dispose();
-            // 返回
-            return re;
-        } else {
-            BufferedImage nimage = new BufferedImage(nW, nH, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D gc = nimage.createGraphics();
-            nimage = gc.getDeviceConfiguration()
-                       .createCompatibleImage(nW, nH, Transparency.TRANSLUCENT);
-            gc.dispose();
-            gc = nimage.createGraphics();
-            gc.fillRect(0, 0, w, h);
-            gc.setComposite(AlphaComposite.Src);
-            gc.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            gc.drawImage(im, 0, 0, nW, nH, null, null);
-            gc.dispose();
-            return nimage;
         }
+
+        // 绘制图像
+        gc.drawImage(im, x, y, nW, nH, bgColor, null);
+
+        // 释放
+        gc.dispose();
+
+        // 返回
+        return re;
+    }
+
+    /**
+     * @see #zoomScale(BufferedImage, int, int, Color)
+     */
+    public static BufferedImage zoomScale(BufferedImage im, int w, int h) {
+        return zoomScale(im, w, h, null);
     }
 
     /**
@@ -296,7 +293,7 @@ public class Images {
      * 
      * @return 被转换后的图像
      */
-    public static BufferedImage zoomScale(BufferedImage im, int w, int h) {
+    public static BufferedImage scale(BufferedImage im, int w, int h) {
         // 获得尺寸
         int oW = im.getWidth();
         int oH = im.getHeight();
@@ -317,7 +314,9 @@ public class Images {
 
         // 创建图像
         BufferedImage re = new BufferedImage(nW, nH, im.getType());
-        re.createGraphics().drawImage(im, 0, 0, nW, nH, null);
+        Graphics2D gc = re.createGraphics();
+        gc.drawImage(im, 0, 0, nW, nH, null);
+        gc.dispose();
         // 返回
         return re;
     }
@@ -417,9 +416,9 @@ public class Images {
      * <p>
      * 图片格式支持 png | gif | jpg | bmp | wbmp
      * 
-     * @param srcIm
+     * @param srcPath
      *            源图像文件对象
-     * @param taIm
+     * @param taPath
      *            目标图像文件对象
      * @param startPoint
      *            起始坐标点，其值[x, y]为相对原图片左上角的坐标
@@ -577,6 +576,21 @@ public class Images {
         }
         catch (IOException e) {
             throw Lang.wrapThrow(e);
+        }
+    }
+
+    /**
+     * @see #write(RenderedImage, String, OutputStream)
+     */
+    public static void writeAndClose(RenderedImage im, String imFormat, OutputStream out) {
+        try {
+            ImageIO.write(im, imFormat, out);
+        }
+        catch (IOException e) {
+            throw Lang.wrapThrow(e);
+        }
+        finally {
+            Streams.safeClose(out);
         }
     }
 
